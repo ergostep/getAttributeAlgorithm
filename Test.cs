@@ -5,7 +5,8 @@ namespace algorithms.TestWork
     Проблемы с текущим кодом:
     1. Название метода
     2. Некорректная работа в случае, если название атрибута совпадается с любым значением в xml.
-    3. Сложность в восприятием кода.
+    3. Сразу считываем весь файл в память, но приэтом ищем первое вхождение атрибута, есть смысл воспользоваться
+    итератором
     */
     public static class Tester
     {
@@ -45,38 +46,39 @@ namespace algorithms.TestWork
 
         public static string GetAttributeValueByName(string input, string elementName, string attrName)
         {
-            string[] lines;
+            string result = String.Empty;
             try
             {
-                lines = System.IO.File.ReadAllLines(input);
+                using (var reader = new StreamReader(input))
+                {
+                    string line;
+                    while ((line = reader.ReadLine()) != null)
+                    {
+                        var startElEndex = line.IndexOf("<" + elementName + " ");
+
+                        if (startElEndex != -1)
+                        {
+
+                            var endElIndex = line.IndexOf('>', startElEndex - 1);
+                            //remove element length from string to receive a string consist only of pairs key="value"
+                            var pairs = line.Substring(startElEndex + elementName.Length + 2,
+                                endElIndex - startElEndex - elementName.Length - 2).Split(" ");
+
+                            foreach (var pair in pairs)
+                            {
+                                if (pair.Split("=")[0] == attrName)
+                                {
+                                    return pair.Split("=")[1].Trim('"');
+                                }
+                            }
+                        }
+                    }
+                }
             }
             catch (IOException e)
             {
                 System.Console.WriteLine(e.ToString());
                 throw;
-            }
-            
-            string result = String.Empty;
-
-            foreach (var line in lines)
-            {
-                var startElEndex = line.IndexOf("<"+elementName+" ");
-
-                if (startElEndex != -1)
-                {
-                    
-                        var endElIndex = line.IndexOf('>', startElEndex - 1);
-                        //remove element length from string to receive a string consist only of pairs key="value"
-                        var pairs = line.Substring(startElEndex + elementName.Length + 2, endElIndex-startElEndex - elementName.Length - 2).Split(" ");
-
-                        foreach (var pair in pairs)
-                        {
-                            if (pair.Split("=")[0] == attrName)
-                            {
-                                return pair.Split("=")[1].Trim('"');
-                            }
-                        }           
-                }
             }
             return result;
         }
